@@ -233,7 +233,7 @@ public class OverlayService extends Service {
                             tomTomFlow = freeFlowSpeed;
                             overlayView.post(() -> resolveAndDisplay(speed));
                         }
-                        @Override public void onError(String msg) {}
+                        @Override public void onError(String msg) { android.util.Log.e("TomTomApiClient", "Flow error: " + msg); }
                     }));
             }
         }
