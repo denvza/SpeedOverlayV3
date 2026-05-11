@@ -143,7 +143,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="TomTom Cache (24 hours)"
+                    android:text="TomTom Cache (7 days)"
                     android:textColor="#AAAAAA"
                     android:textSize="12sp"
                     android:textAllCaps="true"
