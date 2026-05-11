@@ -75,7 +75,8 @@ public class OverlayService extends Service {
     private boolean           hasTomTomKey = false;
 
     // Current values
-    private Integer osmLimit     = null; // null = never received any data
+    private Integer osmLimit       = null;
+    private boolean currentRoadHasOsm = false; // true when current road returned OSM data
     private int     tomTomFlow   = -1;
     private int     displayLimit = -1;   // the resolved limit shown and used for colors
 
@@ -206,7 +207,7 @@ public class OverlayService extends Service {
         int speed = Math.round(location.hasSpeed() ? location.getSpeed() * 3.6f : 0f);
 
         tvSpeed.setText(String.valueOf(speed));
-        applyColors(speed, displayLimit > 0 ? displayLimit : null, osmLimit == null);
+        applyColors(speed, displayLimit > 0 ? displayLimit : null, !currentRoadHasOsm);
 
         double lat = location.getLatitude(), lon = location.getLongitude();
 
@@ -214,8 +215,10 @@ public class OverlayService extends Service {
         speedLimitFetcher.fetchIfNeeded(lat, lon, limit -> {
             if (limit != null && limit > 0) {
                 osmLimit = limit;
+                currentRoadHasOsm = true;
+            } else {
+                currentRoadHasOsm = false;
             }
-            // Change3: if no OSM data keep last value, don't reset
             resolveAndDisplay(speed);
         });
 
@@ -242,12 +245,12 @@ public class OverlayService extends Service {
      */
     private void resolveAndDisplay(int currentSpeed) {
         int resolved = -1;
-        boolean noOsmData = (osmLimit == null);
+        boolean noOsmData = !currentRoadHasOsm;
 
         if (osmLimit != null && osmLimit > 0) {
             resolved = osmLimit;
             // Change4: if TomTom diverges >15 km/h, snap TomTom and use instead
-            if (hasTomTomKey && tomTomFlow > 0 && Math.abs(tomTomFlow - osmLimit) > 15) {
+            if (hasTomTomKey && tomTomFlow > 0 && Math.abs(tomTomFlow - osmLimit) > 25) {
                 int snapped = snapToNearestStep(tomTomFlow);
                 if (snapped > 0) resolved = snapped;
             }
