@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="110dp"
+    android:layout_height="110dp"
+    android:background="@drawable/overlay_bg_osm_none">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center">
+
+        <TextView
+            android:id="@+id/tvSpeed"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="0"
+            android:textSize="38sp"
+            android:textStyle="bold"
+            android:textColor="#FFFFFF"
+            android:includeFontPadding="false" />
+
+        <TextView
+            android:id="@+id/tvUnit"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="km/h"
+            android:textSize="11sp"
+            android:textColor="#FFFFFF"
+            android:letterSpacing="0.05" />
+
+        <View
+            android:layout_width="40dp"
+            android:layout_height="1dp"
+            android:layout_marginTop="4dp"
+            android:layout_marginBottom="3dp"
+            android:background="#44FFFFFF" />
+
+        <TextView
+            android:id="@+id/tvSpeedLimit"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="--"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="#AAAAAA"
+            android:letterSpacing="0.03" />
+
+    </LinearLayout>
+
+    <!-- Purple dot: shown when no OSM data available (Change3) -->
+    <View
+        android:id="@+id/purpleDot"
+        android:layout_width="10dp"
+        android:layout_height="10dp"
+        android:layout_gravity="top|start"
+        android:layout_margin="8dp"
+        android:background="@drawable/purple_dot"
+        android:visibility="gone" />
+
+    <!-- Resize handle -->
+    <View
+        android:id="@+id/resizeHandle"
+        android:layout_width="28dp"
+        android:layout_height="28dp"
+        android:layout_gravity="bottom|end"
+        android:background="@drawable/resize_handle"
+        android:padding="4dp" />
+
+</FrameLayout>
