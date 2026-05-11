@@ -72,6 +72,7 @@ public class OverlayService extends Service {
 
     private SpeedLimitFetcher speedLimitFetcher;
     private TomTomApiClient   tomTomClient;
+    private TomTomSpeedCache  tomTomCache;
     private boolean           hasTomTomKey = false;
 
     // Current values
@@ -80,7 +81,11 @@ public class OverlayService extends Service {
     private int     tomTomFlow   = -1;
     private int     displayLimit = -1;   // the resolved limit shown and used for colors
 
-    private double lastTomTomLat = 0, lastTomTomLon = 0;
+    private double lastTomTomLat  = 0, lastTomTomLon = 0;
+    private long   lastTomTomFetchMs = 0;
+    private static final int   TOMTOM_MIN_DISTANCE_M  = 250;  // fetch every 250m (was 100m)
+    private static final int   TOMTOM_MIN_SPEED_KMH   = 5;    // don't fetch when parked
+    private static final long  TOMTOM_MIN_INTERVAL_MS = 30_000; // max once per 30 seconds
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
     @Override
@@ -92,6 +97,7 @@ public class OverlayService extends Service {
         speedLimitFetcher = new SpeedLimitFetcher(this);
 
         SharedPreferences prefs = getSharedPreferences(PREFS_SETTINGS, MODE_PRIVATE);
+        tomTomCache = new TomTomSpeedCache(this);
         String apiKey = prefs.getString(KEY_API_KEY, "").trim();
         hasTomTomKey  = !apiKey.isEmpty();
         if (hasTomTomKey) tomTomClient = new TomTomApiClient(apiKey);
@@ -223,18 +229,35 @@ public class OverlayService extends Service {
         });
 
         // TomTom freeFlowSpeed — optional, only if key provided
+        // Optimizations: min distance 250m, skip when parked, max once per 30s
         if (hasTomTomKey) {
-            double dist = distanceMeters(lat, lon, lastTomTomLat, lastTomTomLon);
-            if (dist > 100 || lastTomTomLat == 0) {
-                lastTomTomLat = lat; lastTomTomLon = lon;
-                executor.execute(() -> tomTomClient.fetchFreeFlowSpeed(lat, lon,
-                    new TomTomApiClient.FlowSpeedCallback() {
-                        @Override public void onResult(int freeFlowSpeed) {
-                            tomTomFlow = freeFlowSpeed;
-                            overlayView.post(() -> resolveAndDisplay(speed));
-                        }
-                        @Override public void onError(String msg) { android.util.Log.e("TomTomApiClient", "Flow error: " + msg); }
-                    }));
+            double dist       = distanceMeters(lat, lon, lastTomTomLat, lastTomTomLon);
+            long   now        = System.currentTimeMillis();
+            boolean movedEnough  = dist > TOMTOM_MIN_DISTANCE_M || lastTomTomLat == 0;
+            boolean notParked    = speed >= TOMTOM_MIN_SPEED_KMH;
+            boolean notTooSoon   = (now - lastTomTomFetchMs) > TOMTOM_MIN_INTERVAL_MS;
+            if (movedEnough && notParked && notTooSoon) {
+                lastTomTomLat     = lat;
+                lastTomTomLon     = lon;
+                lastTomTomFetchMs = now;
+
+                // Check TomTom cache first (7 days)
+                String ttKey   = OsmCache.buildKey(lat, lon);
+                int    ttCache = tomTomCache.get(ttKey);
+                if (ttCache > 0) {
+                    tomTomFlow = ttCache;
+                    resolveAndDisplay(speed);
+                } else {
+                    executor.execute(() -> tomTomClient.fetchFreeFlowSpeed(lat, lon,
+                        new TomTomApiClient.FlowSpeedCallback() {
+                            @Override public void onResult(int freeFlowSpeed) {
+                                tomTomCache.put(ttKey, freeFlowSpeed);
+                                tomTomFlow = freeFlowSpeed;
+                                overlayView.post(() -> resolveAndDisplay(speed));
+                            }
+                            @Override public void onError(String msg) {}
+                        }));
+                }
             }
         }
     }
