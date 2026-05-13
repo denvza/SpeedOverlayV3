@@ -83,9 +83,9 @@ public class OverlayService extends Service {
 
     private double lastTomTomLat  = 0, lastTomTomLon = 0;
     private long   lastTomTomFetchMs = 0;
-    private static final int   TOMTOM_MIN_DISTANCE_M  = 250;  // fetch every 250m (was 100m)
+    private static final int   TOMTOM_MIN_DISTANCE_M  = 200;  // fetch every 250m (was 100m)
     private static final int   TOMTOM_MIN_SPEED_KMH   = 5;    // don't fetch when parked
-    private static final long  TOMTOM_MIN_INTERVAL_MS = 30_000; // max once per 30 seconds
+    private static final long  TOMTOM_MIN_INTERVAL_MS = 20_000; // max once per 30 seconds
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
     @Override
@@ -273,7 +273,7 @@ public class OverlayService extends Service {
         if (osmLimit != null && osmLimit > 0) {
             resolved = osmLimit;
             // Change4: if TomTom diverges >15 km/h, snap TomTom and use instead
-            if (hasTomTomKey && tomTomFlow > 0 && Math.abs(tomTomFlow - osmLimit) > 25) {
+            if (hasTomTomKey && tomTomFlow > 0 && Math.abs(tomTomFlow - osmLimit) > 20) {
                 int snapped = snapToNearestStep(tomTomFlow);
                 if (snapped > 0) resolved = snapped;
             }
