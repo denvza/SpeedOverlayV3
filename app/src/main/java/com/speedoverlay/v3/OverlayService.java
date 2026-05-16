@@ -55,6 +55,7 @@ public class OverlayService extends Service {
     private View                       overlayView;
     private View                       resizeHandle;
     private View                       purpleDot;
+    private View                       blueDot;
     private WindowManager.LayoutParams layoutParams;
 
     private TextView tvSpeed;
@@ -132,6 +133,7 @@ public class OverlayService extends Service {
         tvSpeedLimit = overlayView.findViewById(R.id.tvSpeedLimit);
         resizeHandle = overlayView.findViewById(R.id.resizeHandle);
         purpleDot    = overlayView.findViewById(R.id.purpleDot);
+        blueDot      = overlayView.findViewById(R.id.blueDot);
 
         int overlayType = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
                 ? WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
@@ -213,7 +215,7 @@ public class OverlayService extends Service {
         int speed = Math.round(location.hasSpeed() ? location.getSpeed() * 3.6f : 0f);
 
         tvSpeed.setText(String.valueOf(speed));
-        applyColors(speed, displayLimit > 0 ? displayLimit : null, !currentRoadHasOsm);
+        applyColors(speed, displayLimit > 0 ? displayLimit : null, !currentRoadHasOsm, false);
 
         double lat = location.getLatitude(), lon = location.getLongitude();
 
@@ -273,7 +275,7 @@ public class OverlayService extends Service {
         if (osmLimit != null && osmLimit > 0) {
             resolved = osmLimit;
             // Change4: if TomTom diverges >15 km/h, snap TomTom and use instead
-            if (hasTomTomKey && tomTomFlow > 0 && Math.abs(tomTomFlow - osmLimit) > 20) {
+            if (hasTomTomKey && tomTomFlow > 0 && Math.abs(tomTomFlow - osmLimit) > 30) {
                 int snapped = snapToNearestStep(tomTomFlow);
                 if (snapped > 0) resolved = snapped;
             }
@@ -298,7 +300,7 @@ public class OverlayService extends Service {
 
         // Colors react to resolved limit (OSM or snapped TomTom)
         // Purple dot shown whenever OSM data is unavailable
-        applyColors(currentSpeed, resolved > 0 ? resolved : null, noOsmData);
+        applyColors(currentSpeed, resolved > 0 ? resolved : null, noOsmData, snapActive);
     }
 
     /** Snaps a speed value to the nearest standard speed limit step */
@@ -316,7 +318,7 @@ public class OverlayService extends Service {
      * Apply colors based on OSM limit.
      * Change3: when noOsmData=true show purple dot instead of going white.
      */
-    private void applyColors(int speed, Integer limitKmh, boolean noOsmData) {
+    private void applyColors(int speed, Integer limitKmh, boolean noOsmData, boolean snapActive) {
         int bgRes, speedColor, limitColor;
 
         if (limitKmh == null) {
@@ -337,9 +339,13 @@ public class OverlayService extends Service {
         tvUnit.setTextColor(0xFFFFFFFF);
         tvSpeedLimit.setTextColor(limitColor);
 
-        // Change3: show/hide purple dot
+        // Purple dot: no OSM data
         if (purpleDot != null) {
             purpleDot.setVisibility(noOsmData ? View.VISIBLE : View.GONE);
+        }
+        // Blue dot: snap active (TomTom overriding OSM)
+        if (blueDot != null) {
+            blueDot.setVisibility(snapActive ? View.VISIBLE : View.GONE);
         }
     }
 
