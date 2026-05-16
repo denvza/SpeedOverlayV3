@@ -189,7 +189,7 @@ public class OverlayService extends Service {
         });
 
         windowManager.addView(overlayView, layoutParams);
-        applyColors(0, null, false);
+        applyColors(0, null, false, false);
         tvSpeedLimit.setText("--");
     }
 
@@ -272,16 +272,19 @@ public class OverlayService extends Service {
         int resolved = -1;
         boolean noOsmData = !currentRoadHasOsm;
 
+        boolean snapActive = false;
+
         if (osmLimit != null && osmLimit > 0) {
             resolved = osmLimit;
-            // Change4: if TomTom diverges >15 km/h, snap TomTom and use instead
+            // if TomTom diverges >30 km/h, snap TomTom and use instead
             if (hasTomTomKey && tomTomFlow > 0 && Math.abs(tomTomFlow - osmLimit) > 30) {
                 int snapped = snapToNearestStep(tomTomFlow);
-                if (snapped > 0) resolved = snapped;
+                if (snapped > 0) { resolved = snapped; snapActive = true; }
             }
         } else if (hasTomTomKey && tomTomFlow > 0) {
             // No OSM data — snap TomTom as fallback, purple dot shows
             resolved = snapToNearestStep(tomTomFlow);
+            snapActive = true;
         }
 
         displayLimit = resolved;
